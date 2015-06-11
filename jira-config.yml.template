@@ -1,0 +1,3 @@
+user: 'email@example.com'
+pass: 'password'
+host: 'https://www.example.com/'

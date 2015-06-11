@@ -1,0 +1,7 @@
+*.swp
+.DS_Store
+*.tmp
+*-login.yml
+*-config.yml
+*.bkp
+
