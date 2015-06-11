@@ -8,5 +8,5 @@ Before running any of the scripts, run
 cp jira-config.yml{.template,}
 ```
 
-and edit `jira-config.yml` to put in your JIRA email and password.
+and edit `jira-config.yml` to put in your JIRA email, password, and host URI.
 
