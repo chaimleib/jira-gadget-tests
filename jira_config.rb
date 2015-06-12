@@ -17,8 +17,8 @@ class JiraConfig
     f = File.open @path
     @data = YAML.load f.read
     f.close
-    @username = @data['username']
-    @password = @data['password']
+    @username = @data.has_key?('username') ? @data['username'] : @data['user']
+    @password = @data.has_key?('password') ? @data['password'] : @data['pass']
     @host = @data['host']
     self
   end
