@@ -1,3 +1,3 @@
-user: 'email@example.com'
-pass: 'password'
+username: 'email@example.com'
+password: 'password'
 host: 'https://www.example.com/'
