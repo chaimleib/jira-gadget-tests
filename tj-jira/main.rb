@@ -3,15 +3,15 @@
 #require 'rubygems'
 require 'jira'
 require 'uri'
-require 'yaml'
 require 'pp'
+require '../jira_config'
 
 class JiraConnection
   EMAIL_RGX = /^[^@]+@[^@]+$/
   URI_RGX = /^https?:\/\/[-.\/a-zA-Z0-9]+$/
   
   def initialize(
-      username:'', password:'', config_file:'jira-config.yml', 
+      username:'', password:'', config_file:'../jira-config.yml',
       host:'',
       interactive:false)
     @username = username
@@ -84,13 +84,10 @@ class JiraConnection
     end
   end
 
-
-  def load_config(path='jira-config.yml')
-    f = File.open(path)
-    config = YAML.load(f.read)
-    f.close
-    @username, @password = config['username'], config['password']
-    @host = config['host']
+  def load_config(path=nil)
+    cfg = JiraConfig.new(path || @config_file)
+    @username, @password = cfg.username, cfg.password
+    @host = cfg.host
   end
 
   def submit_search(jql='')

@@ -3,7 +3,7 @@
 require 'yaml'
 
 class JiraConfig
-  def initialize(config_path:'./jira-config.yml')
+  def initialize(config_path='./jira-config.yml')
     this_dir = File.expand_path '..', __FILE__
     @path = File.expand_path config_path, this_dir
     @username = ''
