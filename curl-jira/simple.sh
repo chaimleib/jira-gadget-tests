@@ -1,13 +1,11 @@
 #!/bin/bash
 
-uri="$(dirname "$0")/_get_host.rb"
-uri="$(eval "$uri")"
-uri="${uri}/rest/api/latest/issue/CD-12345"
-#uri='https://www.example.com/rest/api/latest/issue/CD-12345'
+config_script="$(dirname "$0")/../jira_config.rb"
+config="$(eval "$config_script")"
+eval "$config"
 
-login="$(dirname "$0")/_get_login.rb"
-login="$(eval "$login")"
-#login='user:password'
+uri="${host}/rest/api/latest/issue/CD-12345"
+login="${username}:${password}"
 
 curl -D- -u "$login" -X GET -H "Content-Type: application/json" "$uri" | more
 
