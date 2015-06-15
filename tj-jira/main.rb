@@ -18,10 +18,11 @@ class JiraConnection
       username:'', password:'', config_file:'../jira-config.yml',
       host:'',
       interactive:false)
+    @config_file = config_file
+    
+    # These three are loaded from the config_file
     @username = username
     @password = password
-    @config_file = config_file
-
     @host = host
 
     @estimate = Hash.new
@@ -94,9 +95,15 @@ class JiraConnection
 
   def submit_search(jql='')
     return if jql.empty?
-    jql = URI.escape jql
-    # puts jql
-    uri = URI.parse "#{@host}/rest/api/2/search?jql=#{jql}"
+    path = "/search?jql=#{jql}"
+    submit_get path
+  end
+  
+  def submit_get(path='')
+    return if path.empty?
+    path = URI.escape path
+    path = "/#{path}" if path[0] != '/'
+    uri = URI.parse "#{@host}/rest/api/2#{path}"
     puts uri
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
@@ -105,15 +112,16 @@ class JiraConnection
     request.basic_auth @username, @password
     request["Content-Type"] = "application/json"
     response = http.request(request)
-    puts response.body
+    #puts response.body
     raise "#{response.code}: #{response.message}" if response.code !~ /20[0-9]/
     data = JSON.parse(response.body)
   end
+    
 
   def pull_tickets
-    #jql = "sprint=483+and+remainingestimate>0+order+by+assignee"
+    jql = "sprint=483+and+remainingestimate>0+order+by+assignee"
     #jql = "sprint=505+and+type='Technical task'"
-    jql = "sprint=505"
+    #jql = "sprint=505"
     data = submit_search jql
 
     raise 'Search failed' unless data
@@ -129,15 +137,15 @@ class JiraConnection
     #puts @estimate
     #print data in the end
     @estimate.each do | key, int|
-      print "#{key}:"
-      puts int/3600
+      print "#{key}:#{int/3600}"
     end
+    puts ''
     #pp @estimate
 
     @jiraTickets.each do |key, jiraTicket|
       puts "#{key}:#{jiraTicket.jiraId},#{jiraTicket.createdDate}"
-      print "  status:"
-      p jiraTicket.status
+      puts JSON.pretty_generate jiraTicket.status
+      puts ''
     end
   end
 
@@ -152,31 +160,15 @@ class JiraConnection
     #json_ext = ".json"
 
     #for issue in issue_keys
-    uri = URI.parse "#{@host}/rest/api/latest/issue/#{issue}"
-    puts ''
-    puts uri
-    puts ''
-
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    request = Net::HTTP::Get.new(uri.request_uri)
-    request.basic_auth @username, @password
-    request["Content-Type"] = "application/json"
-
-    response = http.request(request)
-
-    if response.code !~ /20[0-9]{1}/
-      raise StandardError, "Unsuccessful response code #{response.code} for issue #{issue}"
-    end
-    data = JSON.parse(response.body)
+    path = "/issue/#{issue}"
+    data = submit_get path
     fields = data.keys
 
     #puts JSON.pretty_generate(data)
     print data["key"] + ","
     print data["fields"]["reporter"]["displayName"] + ","
     print data["fields"]["assignee"]["displayName"] + ","
-    print  data["fields"]["status"]["name"] + ","
+    print data["fields"]["status"]["name"] + ","
 
     data["fields"]["components"].each do |key|
       print key["name"] + ";"
@@ -186,7 +178,7 @@ class JiraConnection
 
       ticket1 =  JiraTicket.new issue, data["fields"]["summary"],data["fields"]["created"],data["fields"]["status"]
       @jiraTickets[issue] = ticket1
-      puts "======#{issue}#{data["fields"]["summary"]}#{data["fields"]["created"]}#{data["fields"]["status"]}"
+      #puts "======#{issue},#{data["fields"]["summary"]},#{data["fields"]["created"]},#{data["fields"]["status"]["name"]}"
     end
 
     data["fields"]["subtasks"].each do |key|
