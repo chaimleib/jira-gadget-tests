@@ -158,6 +158,9 @@ class JiraConnection
 
     #for issue in issue_keys
       uri = URI.parse("#{@host}/rest/api/latest/issue/" + issue)
+      puts ''
+      puts uri
+      puts ''
 
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
@@ -237,4 +240,4 @@ end
 con = JiraConnection.new config_file: File.expand_path('../../jira-config.yml', __FILE__)
 pp con
 # con.pull_tickets
-con.get_ticket "CD-12345"
+con.get_ticket "CD-28954"
