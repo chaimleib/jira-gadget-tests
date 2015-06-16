@@ -115,8 +115,18 @@ class JiraConnection
     result
   end
   
-  def overview
-    issues = get_issues
+  def issue_has_parent?(issue)
+    begin
+      issue.parent
+    rescue NoMethodError
+      return false
+    end
+  end
+      
+  def overview(username=@username)
+    issues = get_issues username
+    issues.delete_if { |issue| issue_has_parent? issue }
+      
     sorted = sort_issues_by_target_release issues
     sorted.each{ |ver, issues|
       sorted[ver] = issues.map{ |issue| issue.key }
