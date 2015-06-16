@@ -65,7 +65,7 @@ class JiraConnection
   def get_issues(username=@username)
     conditions = [
       "assignee=#{username.inspect}",
-      'project=CD',
+      #'project=CD',
       'updated > -14d',
       'status not in (Closed,Resolved)',
     ]
@@ -73,6 +73,9 @@ class JiraConnection
     query += " order by updated desc"
     puts query
     issues = @client.Issue.jql query
+  end
+  
+  def print_issue_array(issues)
     issues.each do |issue|
       # parent = issue.fields.parent.key
       status = issue.status.name
@@ -95,8 +98,33 @@ class JiraConnection
       puts ''
     end
   end
+  
+  def sort_issues_by_target_release(issues)
+    result = {}
+    _add_to_version = proc do |issue, version|
+      result[version] = [] if !result.has_key? version
+      result[version].push issue
+    end
+    issues.each do |issue|
+      version = issue.versions
+      # Should only have one version
+      raise StandardError if version.length > 1
+      version = version.length == 0 ? 'Unversioned' : version[0].name
+      _add_to_version.call issue, version
+    end
+    result
+  end
+  
+  def overview
+    issues = get_issues
+    sorted = sort_issues_by_target_release issues
+    sorted.each{ |ver, issues|
+      sorted[ver] = issues.map{ |issue| issue.key }
+    }
+    sorted
+  end
 
-  def get_issue(issue='CD-28954')
+  def get_issue(issue='CD-29175')
     issue = @client.Issue.find issue
     binding.pry
   end
@@ -104,3 +132,4 @@ end
 
 con = JiraConnection.new
 con.get_issue
+

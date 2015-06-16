@@ -12,7 +12,7 @@ def hashify(o)
   ].include? o.class
     
   j = o.to_json
-  h = JSON.parse j
+  h = JSON.parse(j)
 end
 
 def clean_recurse(obj)
@@ -21,12 +21,12 @@ def clean_recurse(obj)
     result = {}
     h.each do |k, v|
       next if v.nil?
-      result[k] = clean_recurse v
+      result[k] = clean_recurse(v)
     end
     result
   end
   
-  h = hashify obj
-  _clean_recurse h
+  h = hashify(obj)
+  _clean_recurse(h)
 end
 
