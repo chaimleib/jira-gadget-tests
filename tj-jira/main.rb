@@ -16,8 +16,7 @@ class JiraConnection
   
   def initialize(
       username:'', password:'', config_file:'../jira-config.yml',
-      host:'',
-      interactive:false)
+      host:'')
     @config_file = config_file
     
     # These three are loaded from the config_file
@@ -31,9 +30,6 @@ class JiraConnection
     if @username.empty? || @host.empty?
       if File.exist? @config_file
         load_config @config_file
-      elsif interactive
-        prompt_login
-        prompt_host
       else
         raise "`#{@config_file}` could not be opened"
       end
