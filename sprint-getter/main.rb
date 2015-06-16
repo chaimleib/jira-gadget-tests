@@ -4,6 +4,7 @@
 require 'jira'
 require 'uri'
 require 'pp'
+require './object_cleaner'
 require '../jira_config'
 require 'pry'
 
@@ -101,6 +102,5 @@ class JiraConnection
   end
 end
 
-
 con = JiraConnection.new
-con.get_issues
+con.get_issue
