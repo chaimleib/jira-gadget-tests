@@ -5,6 +5,8 @@ require 'jira'
 require 'uri'
 require 'pp'
 require '../jira_config'
+require 'pry'
+
 
 class JiraConnection
   ## Email username
@@ -59,8 +61,46 @@ class JiraConnection
     pp user
   end
 
+  def get_issues(username=@username)
+    conditions = [
+      "assignee=#{username.inspect}",
+      'project=CD',
+      'updated > -14d',
+      'status not in (Closed,Resolved)',
+    ]
+    query = conditions.join " AND "
+    query += " order by updated desc"
+    puts query
+    issues = @client.Issue.jql query
+    issues.each do |issue|
+      # parent = issue.fields.parent.key
+      status = issue.status.name
+      description = issue.description
+      if description
+        description.gsub! "\n", ' '
+        description.gsub! "\r", ''
+      else
+        description = '<No description>'
+      end
+      versions = issue.versions.map { |ver| ver.name }
+      versions = versions.join ', '
+      if versions.empty?
+        versions = 'No versions assigned'
+      else
+        versions = "Versions: #{versions}"
+      end
+      puts "# #{issue.key} #{issue.updated} (#{status}): #{versions}"
+      puts description
+      puts ''
+    end
+  end
+
+  def get_issue(issue='CD-28954')
+    issue = @client.Issue.find issue
+    binding.pry
+  end
 end
 
 
 con = JiraConnection.new
-con.get_user
+con.get_issues
