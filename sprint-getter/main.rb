@@ -61,16 +61,6 @@ class JiraConnection
 
 end
 
-class JiraTicket
-  def initialize(jiraId,summary,createdDate,status)
-    @jiraId = jiraId
-    @summary = summary
-    @createdDate = createdDate
-    @status = status
-  end
-  attr_accessor :jiraId, :summary, :createdDate, :status
-end
-
 
 con = JiraConnection.new
 con.get_user
