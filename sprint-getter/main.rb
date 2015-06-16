@@ -54,6 +54,11 @@ class JiraConnection
     end
   end
 
+  def get_user(username=@username)
+    user = @client.User.find username
+    pp user
+  end
+
 end
 
 class JiraTicket
@@ -68,4 +73,4 @@ end
 
 
 con = JiraConnection.new
-con.get_projects
+con.get_user
