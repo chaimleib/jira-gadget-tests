@@ -99,22 +99,41 @@ class JiraConnection
     end
   end
   
-  def sort_issues_by_target_release(issues)
+  def sort_issues_by_version_category(issues)
     result = {}
     _add_to_version = proc do |issue, version|
       result[version] = [] if !result.has_key? version
       result[version].push issue
     end
     issues.each do |issue|
-      version = issue.versions
-      # Should only have one version
-      raise StandardError if version.length > 1
-      version = version.length == 0 ? 'Unversioned' : version[0].name
+      version = issue_version_category issue
       _add_to_version.call issue, version
     end
     result
   end
   
+  def issue_target_version(issue)
+    # targeted version field is customfield_12803
+    begin
+      issue.customfield_12803.name
+    rescue NoMethodError
+      nil
+    end
+  end
+  
+  def issue_affected_versions(issue)
+    versions = issue.versions.map{ |ver| ver.name }
+    versions
+  end
+  
+  def issue_version_category(issue)
+    target = issue_target_version issue 
+    return target if target
+    earliest = issue_affected_versions(issue).min
+    return earliest if earliest
+    "Unversioned"
+  end
+    
   def issue_has_parent?(issue)
     begin
       issue.parent
@@ -127,7 +146,7 @@ class JiraConnection
     issues = get_issues username
     issues.delete_if { |issue| issue_has_parent? issue }
       
-    sorted = sort_issues_by_target_release issues
+    sorted = sort_issues_by_version_category issues
     sorted.each{ |ver, issues|
       sorted[ver] = issues.map{ |issue| issue.key }
     }
