@@ -5,6 +5,7 @@ require 'jira'
 require 'uri'
 require 'pp'
 require './object_cleaner'
+require './sprint'
 require '../jira_config'
 require 'pry'
 
@@ -86,7 +87,7 @@ class JiraConnection
       else
         description = '<No description>'
       end
-      versions = issue.versions.map { |ver| ver.name }
+      versions = issue.versions.map &:name
       versions = versions.join ', '
       if versions.empty?
         versions = 'No versions assigned'
@@ -112,43 +113,26 @@ class JiraConnection
     result
   end
   
-  def issue_target_version(issue)
-    # targeted version field is customfield_12803
-    begin
-      issue.customfield_12803.name
-    rescue NoMethodError
-      nil
-    end
-  end
-  
   def issue_affected_versions(issue)
-    versions = issue.versions.map{ |ver| ver.name }
+    versions = issue.versions.map &:name
     versions
   end
   
   def issue_version_category(issue)
-    target = issue_target_version issue 
-    return target if target
+    target = issue.target_version
+    return target['name'] if target
     earliest = issue_affected_versions(issue).min
     return earliest if earliest
     "Unversioned"
   end
     
-  def issue_has_parent?(issue)
-    begin
-      issue.parent
-    rescue NoMethodError
-      return false
-    end
-  end
-      
   def overview(username=@username)
     issues = get_issues username
-    issues.delete_if { |issue| issue_has_parent? issue }
+    issues.delete_if &:has_parent?
       
     sorted = sort_issues_by_version_category issues
     sorted.each{ |ver, issues|
-      sorted[ver] = issues.map{ |issue| issue.key }
+      sorted[ver] = issues.map &:key
     }
     sorted
   end
@@ -156,6 +140,34 @@ class JiraConnection
   def get_issue(issue='CD-29175')
     issue = @client.Issue.find issue
     binding.pry
+  end
+end
+
+class JIRA::Resource::Issue
+  def target_version
+    customfield_12803
+  end
+  
+  def has_parent?
+    begin
+      self.parent
+      true
+    rescue NoMethodError
+      return false
+    end
+  end
+  
+  def sprints
+    result = self.customfield_10800
+    result = result.map{|s| Sprint.new s}
+    result
+  end
+  
+  def current_sprint
+    temp = sprints
+    temp.delete_if{|s| !s.active?}
+    return nil if temp.empty?
+    temp.sort_by!{|s| s.startDate}.last
   end
 end
 
