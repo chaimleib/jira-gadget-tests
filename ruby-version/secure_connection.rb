@@ -13,7 +13,7 @@ class SecureConnection
   URI_RGX = /^https?:\/\/[-.\/a-zA-Z0-9]+$/
 
   def initialize(config_file='../jira-config.yml')
-    @config_file = File.expand_path config_file, $0 + '/..'
+    @config_file = File.expand_path config_file, "#{__FILE__}/.."
 
     # These three are loaded from the config_file
     #@username = username
@@ -50,7 +50,6 @@ class SecureConnection
     request["Content-Type"] = "application/json"
     response = http.request(request)
     raise "#{response.code}: #{response.message}" if response.code !~ /20[0-9]/
-    puts response.body
     response.body
   end
 end
@@ -58,5 +57,5 @@ end
 
 if __FILE__ == $0
   con = SecureConnection.new
-  con.submit_get '/wiki/display/CP/CD+Maintenance+Releases'
+  puts con.submit_get '/wiki/display/CP/CD+Maintenance+Releases'
 end
