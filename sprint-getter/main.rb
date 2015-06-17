@@ -5,7 +5,7 @@ require 'jira'
 require 'uri'
 require 'pp'
 require './object_cleaner'
-require './sprint'
+require './issue.rb'
 require '../jira_config'
 require 'pry'
 
@@ -140,34 +140,6 @@ class JiraConnection
   def get_issue(issue='CD-29175')
     issue = @client.Issue.find issue
     binding.pry
-  end
-end
-
-class JIRA::Resource::Issue
-  def target_version
-    customfield_12803
-  end
-  
-  def has_parent?
-    begin
-      self.parent
-      true
-    rescue NoMethodError
-      return false
-    end
-  end
-  
-  def sprints
-    result = self.customfield_10800
-    result = result.map{|s| Sprint.new s}
-    result
-  end
-  
-  def current_sprint
-    temp = sprints
-    temp.delete_if{|s| !s.active?}
-    return nil if temp.empty?
-    temp.sort_by!{|s| s.startDate}.last
   end
 end
 
