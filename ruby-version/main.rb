@@ -7,6 +7,8 @@ require 'pry'
 require './secure_connection'
 
 module VersionScraper
+  require 'time'  # if not in module, can't use Time.parse
+  
   NBSP = " "  # Unicode C2 A0
   
   def scrape(html)
@@ -117,8 +119,8 @@ module VersionScraper
     date = cell.at('time')
     if date
       date = date.attributes['datetime'].value
-      date = date.split('-')
-      date = Time.new(*date)
+      date += ' 23:59:59'
+      date = Time.parse(date)
     else
       # If there is no time here, no use looking further
       return nil
