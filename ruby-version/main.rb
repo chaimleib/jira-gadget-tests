@@ -6,60 +6,141 @@ require 'pp'
 require 'pry'
 require './secure_connection'
 
-class VersionScraper
-  def initialize
-    @rel_uri = '/wiki/display/CP/CD+Maintenance+Releases'
-  end
-
-  def scrape
-    result = {}
-    
-    con = SecureConnection.new
-    html = con.submit_get @rel_uri
+module VersionScraper
+  NBSP = " "  # C2 A0
+  
+  def scrape(html)
     page = Nokogiri::HTML html
     tables = get_tables page
     puts "#{tables.length} tables extracted"
-    tables.each {|table|
-      scrape_table table, result
+    data = tables.map{|table| scrape_table table}
+    data = combine_tables data
+    pp data
+  end
+  
+  def get_tables page
+    tables = page.css('table[class=confluenceTable]')
+    tables.select{|table| table_has_column table, 'code freeze'}
+  end
+  
+  def scrape_table(table)
+    header = get_table_headers table
+    rows = table.css('tr')
+    rows.shift  # remove header row
+    result_rows = rows.map{|row| scrape_row row, header}
+    {
+      :header => header,
+      :data => result_rows,
     }
-    result
+  end
+  
+  def combine_tables(tables)
+    if tables.any?{|table| !table[:header][0].downcase.include? 'release'}
+      raise StandardError
+    end
+    
+    result = {}
+    tables.each{|table|
+      release_key = table[:header][0].downcase
+      table[:data].each{|row|
+        # Not all tables labeled the release column the same
+        unless release_key == 'release'
+          row['release'] = row[release_key]
+          row.delete release_key
+        end
+        release = row['release'][:name]
+        result[release] = row
+      }
+    }
+   result 
+    
+  end  
+  
+  def html_strip(html)
+    html.gsub(NBSP, ' ').strip
+  end
+  
+  def scrape_row(row, header)
+    cells = row.css('td')
+    
+    # first cell in row contains a version number,
+    # possibly a link
+    version = cells.shift
+    version_name = html_strip version.text
+    version_uri = version.at('a')
+    if version_uri
+      version_uri = version_uri.attributes['href'].value
+    end
+    
+    # other cells have dates and tags about this version
+    data = cells.map{|cell| scrape_cell cell}
+    
+    # put version info at front of data
+    data.unshift({
+      :name => version_name,
+      :uri => version_uri
+    })
+    
+    header = header.map &:downcase
+    
+    # make a hash with keys=header, values=data
+    Hash[header.zip data]
+  end
+  
+  def scrape_cell(cell)
+    # This page was nice and enclosed dates in <time> elements
+    time = cell.at('time')
+    if time
+      time = time.attributes['datetime'].value
+    else
+      # If there is no time here, no use looking further
+      return nil
+    end
+    
+    # This page also enclosed its labels about the dates in separate elements. Nice!
+    tags = cell.css('.status-macro').map{|tag| html_strip tag.text }
+    {
+      :time => time,
+      :tags => tags,
+    }
   end
   
   def get_table_headers(table)
     first_row = table.at('tr')
     headers = table.css('th') || table.css('td')
-    headers.map!{|th| th.text.strip }
+    headers = headers.map{|th| th.text.gsub(NBSP, ' ').strip}
     headers
   end
     
   def table_has_column(table, col)
-    get_table_headers(table).map{|col| col.downcase}.include? col
-  end
-  
-  def get_tables page
-    results = {}
-    tables = page.css('table[class=confluenceTable]')
-    binding.pry
-    # delete_if doesn't work on Nokogiri nodes
-    tables.delete_if{|table| !table_has_column(table, 'code freeze') }
-    table_headers = tables.map{|table| get_table_headers table }
-    results['headers'] = table_headers
-    results['data'] = []
-    tables.each{|table|
-      result_rows = []
-      results['data'].push result_rows
-      rows = table.css('tr')
-      rows.shift
-      rows.map{|row|
-        cells = row.css('td').map{|cell| cell.text.strip }
-        result_rows.push cells
-      }
-    }
-    results
+    get_table_headers(table).map(&:downcase).include? col
   end
 end
 
-scraper = VersionScraper.new
-data = scraper.scrape
-pp data
+class Nokogiri::XML::NodeSet
+  def delete_if
+    to_delete = []
+    self.each do |el|
+      to_delete << el if yield el
+    end
+    to_delete.each do |el|
+      delete el
+    end
+  end
+end
+
+def write_page
+  rel_uri = '/wiki/display/CP/CD+Maintenance+Releases'
+  con = SecureConnection.new
+  html = con.submit_get rel_uri
+  File.new('test.html', 'w').write(html)
+end
+  
+def test 
+  include VersionScraper
+  html = File.read('test.html')
+  scrape html
+end
+
+test
 
