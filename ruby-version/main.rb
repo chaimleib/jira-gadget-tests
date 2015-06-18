@@ -17,13 +17,21 @@ module VersionScraper
     data = combine_tables data
   end
   
-  def scrape_code_freezes(html)
+  def scrape_freezes(html)
     data = scrape html
     result = {}
     data.each do |release, row|
       result[release] = row['code freeze']
     end
     result
+  end
+  
+  def scrape_freeze_dates(html)
+    data = scrape_freezes html
+    data.each do |release, info|
+      next if info.nil?
+      data[release] = info[:date]
+    end
   end
   
   def get_tables page
@@ -106,9 +114,11 @@ module VersionScraper
   
   def scrape_cell(cell)
     # This page was nice and enclosed dates in <time> elements
-    time = cell.at('time')
-    if time
-      time = time.attributes['datetime'].value
+    date = cell.at('time')
+    if date
+      date = date.attributes['datetime'].value
+      date = date.split('-')
+      date = Time.new(*date)
     else
       # If there is no time here, no use looking further
       return nil
@@ -117,7 +127,7 @@ module VersionScraper
     # This page also enclosed its labels about the dates in separate elements. Nice!
     tags = cell.css('.status-macro').map{|tag| html_strip tag.text }
     {
-      :time => time,
+      :date => date,
       :tags => tags,
     }
   end
@@ -156,8 +166,9 @@ end
 def test 
   include VersionScraper
   html = File.read('test.html')
-  freezes = scrape_code_freezes html
-  pp freezes.keys.sort
+  freezes = scrape_freeze_dates html
+  pp freezes
+  #pp freezes.keys.sort
 end
 
 test
