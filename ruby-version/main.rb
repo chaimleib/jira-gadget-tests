@@ -7,15 +7,23 @@ require 'pry'
 require './secure_connection'
 
 module VersionScraper
-  NBSP = " "  # C2 A0
+  NBSP = " "  # Unicode C2 A0
   
   def scrape(html)
     page = Nokogiri::HTML html
     tables = get_tables page
-    puts "#{tables.length} tables extracted"
+    #puts "#{tables.length} tables extracted"
     data = tables.map{|table| scrape_table table}
     data = combine_tables data
-    pp data
+  end
+  
+  def scrape_code_freezes(html)
+    data = scrape html
+    result = {}
+    data.each do |release, row|
+      result[release] = row['code freeze']
+    end
+    result
   end
   
   def get_tables page
@@ -28,6 +36,7 @@ module VersionScraper
     rows = table.css('tr')
     rows.shift  # remove header row
     result_rows = rows.map{|row| scrape_row row, header}
+    result_rows.delete_if &:nil?
     {
       :header => header,
       :data => result_rows,
@@ -49,6 +58,9 @@ module VersionScraper
           row.delete release_key
         end
         release = row['release'][:name]
+        if result.has_key? release
+          raise "release #{release} already in table with value #{result[release]}"
+        end
         result[release] = row
       }
     }
@@ -67,6 +79,7 @@ module VersionScraper
     # possibly a link
     version = cells.shift
     version_name = html_strip version.text
+    return nil if version_name.empty?
     version_uri = version.at('a')
     if version_uri
       version_uri = version_uri.attributes['href'].value
@@ -75,6 +88,10 @@ module VersionScraper
     # other cells have dates and tags about this version
     data = cells.map{|cell| scrape_cell cell}
     
+    if data.any?{|cell| cell && cell[:tags].include?("CANCELLED")}
+      return nil
+    end
+      
     # put version info at front of data
     data.unshift({
       :name => version_name,
@@ -139,7 +156,8 @@ end
 def test 
   include VersionScraper
   html = File.read('test.html')
-  scrape html
+  freezes = scrape_code_freezes html
+  pp freezes.keys.sort
 end
 
 test
