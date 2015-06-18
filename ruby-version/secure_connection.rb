@@ -59,3 +59,4 @@ if __FILE__ == $0
   con = SecureConnection.new
   puts con.submit_get '/wiki/display/CP/CD+Maintenance+Releases'
 end
+
