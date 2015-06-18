@@ -146,32 +146,34 @@ module VersionScraper
   end
 end
 
-class Nokogiri::XML::NodeSet
-  def delete_if
-    to_delete = []
-    self.each do |el|
-      to_delete << el if yield el
-    end
-    to_delete.each do |el|
-      delete el
-    end
+#class Nokogiri::XML::NodeSet
+#  def delete_if
+#    to_delete = []
+#    self.each do |el|
+#      to_delete << el if yield el
+#    end
+#    to_delete.each do |el|
+#      delete el
+#    end
+#  end
+#end
+
+if __FILE__ == $0
+  def write_page
+    rel_uri = '/wiki/display/CP/CD+Maintenance+Releases'
+    con = SecureConnection.new
+    html = con.submit_get rel_uri
+    File.new('test.html', 'w').write(html)
   end
-end
 
-def write_page
-  rel_uri = '/wiki/display/CP/CD+Maintenance+Releases'
-  con = SecureConnection.new
-  html = con.submit_get rel_uri
-  File.new('test.html', 'w').write(html)
-end
-  
-def test 
-  include VersionScraper
-  html = File.read('test.html')
-  freezes = scrape_freeze_dates html
-  pp freezes
-  #pp freezes.keys.sort
-end
+  def test
+    include VersionScraper
+    html = File.read('test.html')
+    freezes = scrape_freeze_dates html
+    pp freezes
+    #pp freezes.keys.sort
+  end
 
-test
+  test
+end
 
