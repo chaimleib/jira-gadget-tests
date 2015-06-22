@@ -50,7 +50,10 @@ class Sprint
 end
 
 
-sprint_str = "com.atlassian.greenhopper.service.sprint.Sprintdeadbeef[id=339,rapidViewId=48,state=ACTIVE,name=Jamaica - Sprint 12 - 12.0.11,startDate=2015-06-08T15:33:35.445-07:00,endDate=2015-06-19T15:33:00.000-07:00,completeDate=<null>,sequence=524]"
+if $0 == __FILE__
+  sprint_str = "com.atlassian.greenhopper.service.sprint.Sprintdeadbeef[id=339,rapidViewId=48,state=ACTIVE,name=Jamaica - Sprint 12 - 12.0.11,startDate=2015-06-08T15:33:35.445-07:00,endDate=2015-06-19T15:33:00.000-07:00,completeDate=<null>,sequence=524]"
 
-s = Sprint.new sprint_str
-s.print_data
+  s = Sprint.new sprint_str
+  s.print_data
+end
+

@@ -1,5 +1,6 @@
 
 def hashify(o)
+  # convert objects to a plain hash using its to_json method
   return o if [
     Bignum,
     Fixnum,
@@ -16,6 +17,9 @@ def hashify(o)
 end
 
 def clean_recurse(obj)
+  # hashify and recursively remove fields set to nil and return the 
+  # resulting hash
+  
   def _clean_recurse(h)
     return h if h.class != Hash
     result = {}

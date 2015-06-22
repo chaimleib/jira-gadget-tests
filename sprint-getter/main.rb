@@ -4,8 +4,8 @@
 require 'jira'
 require 'uri'
 require 'pp'
-require './object_cleaner'
-require './issue.rb'
+require './lib/utilities/object_cleaner'
+require './lib/jira-extensions/issue.rb'
 require '../jira_config'
 require 'pry'
 
