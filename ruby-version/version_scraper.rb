@@ -57,24 +57,52 @@ module VersionScraper
       raise StandardError
     end
 
-    result = {}
-    tables.each{|table|
+    _fix_release_key = proc do |table|
+      # Not all tables labeled the 'release' column the same, so
+      # normalize them
       release_key = table[:header][0].downcase
-      table[:data].each{|row|
-        # Not all tables labeled the release column the same
-        unless release_key == 'release'
+      table[:header][0] = 'release'
+      unless release_key == 'release'
+        table[:data].each do |row|
           row['release'] = row[release_key]
           row.delete release_key
         end
-        release = row['release'][:name]
-        if result.has_key? release
-          raise "release #{release} already in table with value #{result[release]}"
-        end
+      end
+    end
+    
+    result = {}
+    _add_row = proc do |row|
+      release = row['release'][:name]
+      if !result.has_key? release || result[release].nil?
         result[release] = row
-      }
-    }
-   result
-
+        next
+      end
+      # If we're here, we have a duplicate entry; resolve it.
+      # I only care about the code freeze date
+      stored = result[release]['code freeze']
+      new = row['code freeze']
+      if stored == new || new.nil?
+        # nothing to add!
+        next
+      elsif stored.nil?
+        result[release] = row
+        next
+      else stored != new
+        puts "result[#{release.inspect}] ="
+        puts YAML.dump result[release]
+        puts ''
+        puts "row = "
+        puts YAML.dump row
+        raise "#{release.inspect} already present with a conflicting code freeze"
+      end
+    end
+    
+    tables.each do |table|
+      _fix_release_key.call table
+      # Now try to add the row
+      table[:data].each{|row| _add_row.call row}
+    end
+    result
   end
 
   def html_strip(html)

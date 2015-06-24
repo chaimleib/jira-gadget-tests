@@ -10,7 +10,7 @@ def write_page
   File.new('test.html', 'w').write(html)
 end
 
-write_page
+#write_page
 
 html = File.read('test.html')
 freezes = VersionScraper.scrape_freeze_dates html
